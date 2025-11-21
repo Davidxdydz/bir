@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-8">
+    <div class="glass p-8 rounded-xl text-center space-y-8 relative overflow-hidden">
+        <!-- Background Pulse Animation -->
+        <div
+            class="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-violet-500/10 animate-pulse pointer-events-none">
+        </div>
+
+        <h2 class="text-3xl font-bold relative z-10">Match in Progress</h2>
+        <div class="text-xl text-slate-400 relative z-10">Playing at <span class="text-white font-bold">{{
+                match['table_name'] }}</span></div>
+
+        <div class="flex justify-between items-center relative z-10">
+            <div class="text-center w-1/3">
+                <div class="text-2xl font-bold break-words">{{ match['team1_name'] }}</div>
+            </div>
+            <div class="text-4xl font-bold text-slate-600">VS</div>
+            <div class="text-center w-1/3">
+                <div class="text-2xl font-bold break-words">{{ match['team2_name'] }}</div>
+            </div>
+        </div>
+
+        <!-- Dynamic Match Flow Container -->
+        <div id="match-flow-container" class="relative z-10 space-y-8">
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center">
+                <div class="animate-pulse text-6xl mb-4">⏳</div>
+                <p class="text-slate-400">Loading match status...</p>
+            </div>
+
+            <!-- Phase 0: Scheduled (Waiting for scheduled time) -->
+            <div id="scheduled-phase" class="hidden space-y-6 text-center">
+                <div class="text-6xl mb-4">⏰</div>
+                <h3 class="text-2xl font-bold">Match Scheduled</h3>
+                <div class="bg-slate-700 rounded-xl p-6 max-w-md mx-auto">
+                    <p class="text-slate-300 mb-2">Your match will start in:</p>
+                    <div id="scheduled-countdown" class="text-4xl font-bold gradient-text mb-4">--:--</div>
+                    <p class="text-sm text-slate-400">Scheduled for: <span id="scheduled-time-display">--:--</span></p>
+                </div>
+                <p class="text-slate-400">You'll be able to ready up when the scheduled time arrives.</p>
+            </div>
+
+            <!-- Phase 1: Ready -->
+            <div id="ready-phase" class="hidden space-y-6">
+                <div class="bg-slate-800/50 p-6 rounded-lg text-left space-y-4">
+                    <h3 class="font-bold text-lg text-center">Quick Rules</h3>
+                    <ul class="list-disc list-inside text-slate-300 space-y-2 text-sm">
+                        <li>Elbows must stay behind the edge of the table.</li>
+                        <li>Two reracks allowed per game.</li>
+                        <li>Bounce shots count as two cups but can be swatted.</li>
+                        <li>Heating up: 2 makes in a row = balls back.</li>
+                        <li>On fire: 3 makes in a row = shoot until you miss.</li>
+                        <li>Island: Once per game, call a specific cup. If hit, count as 2.</li>
+                    </ul>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-4 rounded-lg bg-slate-800/30" id="team1-status">
+                        <div class="text-xs uppercase text-slate-400 mb-1">{{ match['team1_name'] }}</div>
+                        <div class="font-bold status-text">Waiting...</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg bg-slate-800/30" id="team2-status">
+                        <div class="text-xs uppercase text-slate-400 mb-1">{{ match['team2_name'] }}</div>
+                        <div class="font-bold status-text">Waiting...</div>
+                    </div>
+                </div>
+
+                <button id="ready-btn" onclick="setReady()"
+                    class="w-full py-4 rounded-xl bg-slate-700 font-bold text-lg shadow-lg hover:bg-slate-600 transition transform">
+                    I'm Ready
+                </button>
+            </div>
+
+            <!-- Phase 2: Timer -->
+            <div id="timer-phase" class="hidden space-y-8">
+                <div class="text-center">
+                    <div class="text-sm text-slate-400 uppercase tracking-widest mb-2">Time Remaining</div>
+                    <div id="timer-display" class="text-6xl font-mono font-bold gradient-text">15:00</div>
+                </div>
+
+                <button id="done-btn" onclick="setDone()"
+                    class="w-full py-6 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 font-bold text-2xl shadow-lg hover:scale-105 transition transform active:scale-95">
+                    DONE!
+                </button>
+                <div class="text-center text-xs text-slate-500">Click when your game is finished</div>
+            </div>
+
+            <!-- Phase 3: Submit (Existing Form) -->
+            <div id="result-form" class="hidden border-t border-slate-700 pt-8">
+                <h3 class="text-xl font-bold mb-4">Submit Results</h3>
+                <p class="text-sm text-slate-400 mb-6">Enter the number of cups hit by each team.</p>
+
+                <form id="score-form" onsubmit="submitScore(event)" class="space-y-6">
+                    <div class="flex justify-center gap-8">
+                        <div class="w-24">
+                            <label class="block text-xs uppercase mb-2">{{ match['team1_name'] }}</label>
+                            <input type="number" name="score1" min="0" max="10" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center text-2xl font-bold focus:border-pink-500 outline-none">
+                        </div>
+                        <div class="w-24">
+                            <label class="block text-xs uppercase mb-2">{{ match['team2_name'] }}</label>
+                            <input type="number" name="score2" min="0" max="10" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center text-2xl font-bold focus:border-violet-500 outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg shadow-lg hover:scale-105 transition transform">
+                        Submit Score
+                    </button>
+                </form>
+            </div>
+
+            <!-- Phase 4: Waiting for Opponent -->
+            <div id="waiting-phase" class="hidden space-y-6 text-center">
+                <div class="animate-pulse text-6xl mb-4">⏳</div>
+                <h3 class="text-2xl font-bold">Waiting for Opponent...</h3>
+                <p class="text-slate-400">We need both teams to submit the same score to verify the result.</p>
+            </div>
+
+            <!-- Phase 5: Score Mismatch -->
+            <div id="mismatch-phase" class="hidden space-y-6 text-center">
+                <div class="text-6xl mb-4">❌</div>
+                <h3 class="text-2xl font-bold text-red-400">Scores Don't Match!</h3>
+                <p class="text-slate-400">The submitted scores don't agree. Please verify with your opponent and
+                    resubmit.</p>
+                <button onclick="clearMismatch()"
+                    class="px-8 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 font-bold text-lg shadow-lg hover:scale-105 transition transform">
+                    Try Again
+                </button>
+            </div>
+
+            <!-- Phase 6: Result -->
+            <div id="result-phase" class="hidden space-y-8 text-center">
+                <div id="result-icon" class="text-8xl mb-4">🏆</div>
+                <h2 id="result-title" class="text-4xl font-bold gradient-text">YOU WIN!</h2>
+                <p id="result-message" class="text-slate-400">Congratulations on the victory.</p>
+
+                <a href="{{ url_for('index') }}"
+                    class="inline-block px-8 py-4 rounded-xl bg-slate-700 font-bold text-lg shadow-lg hover:bg-slate-600 transition transform">
+                    Back to Home
+                </a>
+            </div>
+        </div>
+
+        <script>
+            const MATCH_ID = {{ match['id'] }};
+            const TEAM1_ID = {{ match['team1_id'] }};
+            const TEAM2_ID = {{ match['team2_id'] }};
+            const CURRENT_USER_ID = {{ g.user['id'] }};
+            const MATCH_DURATION_MINUTES = {{ match_duration_minutes }};  // Single source of truth from backend
+
+            let timerInterval;
+            let scheduledCountdownInterval;
+            let notificationSent = false;
+            let pollInterval; // Store interval ID to clear it later
+
+            function updateUI(state) {
+                document.getElementById('loading-state').classList.add('hidden');
+
+                // Check for completed match (Result Phase)
+                if (state.winner_id) {
+                    showPhase('result-phase');
+                    const isWinner = state.winner_id === CURRENT_USER_ID;
+                    document.getElementById('result-title').textContent = isWinner ? "YOU WIN!" : "YOU LOSE";
+                    document.getElementById('result-icon').textContent = isWinner ? "🏆" : "💀";
+                    document.getElementById('result-message').textContent = isWinner ? "Congratulations on the victory!" : "Better luck next time.";
+
+                    // Stop polling - match is done
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                    if (scheduledCountdownInterval) {
+                        clearInterval(scheduledCountdownInterval);
+                    }
+                    return;
+                }
+
+                // Check if match is pending (scheduled but not started yet)
+                if (state.match_status === 'pending' && state.scheduled_start) {
+                    showScheduledPhase(state.scheduled_start);
+                    return;
+                }
+
+                // Check if I have submitted (Waiting Phase)
+                const isTeam1 = CURRENT_USER_ID === TEAM1_ID;
+                const amISubmitted = isTeam1 ? state.team1_submitted : state.team2_submitted;
+
+                // Check for mismatch
+                if (state.mismatch_flag) {
+                    showPhase('mismatch-phase');
+                    return;
+                }
+
+                if (amISubmitted) {
+                    showPhase('waiting-phase');
+                    return;
+                }
+
+                // Check if we should show result form (Both done OR Timer expired)
+                const timerExpired = state.timer_start && (new Date() - new Date(state.timer_start)) > MATCH_DURATION_MINUTES * 60 * 1000;
+
+                if ((state.team1_done && state.team2_done) || timerExpired) {
+                    showPhase('result-form');
+                    if (timerExpired && !notificationSent) {
+                        new Notification("Time's up!", { body: "The match timer has ended. Please submit results." });
+                        notificationSent = true;
+                    }
+                    return;
+                }
+
+                // Check if timer is running (Both ready)
+                if (state.timer_start) {
+                    showPhase('timer-phase');
+                    startTimer(state.timer_start);
+
+                    // Update Done button state
+                    const amIDone = isTeam1 ? state.team1_done : state.team2_done;
+                    const btn = document.getElementById('done-btn');
+
+                    if (amIDone) {
+                        btn.disabled = true;
+                        btn.textContent = "WAITING FOR OPPONENT...";
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.classList.remove('hover:scale-105', 'active:scale-95');
+                    }
+                    return;
+                }
+
+                // Default: Ready Phase
+                showPhase('ready-phase');
+
+                // Update Ready UI
+                updateReadyStatus('team1-status', state.team1_ready);
+                updateReadyStatus('team2-status', state.team2_ready);
+
+                const amIReady = isTeam1 ? state.team1_ready : state.team2_ready;
+                const readyBtn = document.getElementById('ready-btn');
+
+                if (amIReady) {
+                    readyBtn.disabled = true;
+                    readyBtn.textContent = "Ready! Waiting for opponent...";
+                    readyBtn.classList.add('bg-green-600', 'text-white');
+                    readyBtn.classList.remove('bg-slate-700', 'hover:bg-slate-600');
+                }
+            }
+
+            function showPhase(phaseId) {
+                ['scheduled-phase', 'ready-phase', 'timer-phase', 'result-form', 'waiting-phase', 'mismatch-phase', 'result-phase'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(phaseId).classList.remove('hidden');
+            }
+
+            function showScheduledPhase(scheduledStartISO) {
+                showPhase('scheduled-phase');
+
+                // Clear any existing countdown
+                if (scheduledCountdownInterval) {
+                    clearInterval(scheduledCountdownInterval);
+                }
+
+                const scheduledTime = new Date(scheduledStartISO);
+                document.getElementById('scheduled-time-display').textContent = scheduledTime.toLocaleTimeString();
+
+                function updateCountdown() {
+                    const now = new Date();
+                    const diff = scheduledTime - now;
+
+                    if (diff <= 0) {
+                        document.getElementById('scheduled-countdown').textContent = 'Starting now...';
+                        clearInterval(scheduledCountdownInterval);
+                        // Poll will pick up the status change
+                        return;
+                    }
+
+                    const minutes = Math.floor(diff / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    document.getElementById('scheduled-countdown').textContent =
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                updateCountdown();
+                scheduledCountdownInterval = setInterval(updateCountdown, 1000);
+            }
+
+            async function clearMismatch() {
+                try {
+                    await fetch(`/api/match/${MATCH_ID}/reset_mismatch`, { method: 'POST' });
+                    pollState();
+                } catch (e) {
+                    console.error('Error resetting mismatch:', e);
+                }
+            }
+
+            function updateReadyStatus(elementId, isReady) {
+                const el = document.getElementById(elementId);
+                const text = el.querySelector('.status-text');
+                if (isReady) {
+                    text.textContent = 'READY';
+                    text.classList.add('text-green-400');
+                } else {
+                    text.textContent = 'WAITING...';
+                    text.classList.remove('text-green-400');
+                }
+            }
+
+            function startTimer(startTimeStr) {
+                showPhase('timer-phase');
+
+                const timerDisplay = document.getElementById('timer-display');
+                const timerStart = new Date(startTimeStr);
+                const duration = MATCH_DURATION_MINUTES * 60 * 1000; // Use centralized constant
+
+                // Clear existing interval
+                if (timerInterval) clearInterval(timerInterval);
+
+                timerInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const elapsed = now - timerStart.getTime();
+                    const remaining = duration - elapsed;
+
+                    if (remaining <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null; // Clear the interval ID
+                        timerDisplay.textContent = "00:00";
+                        // Force UI update to switch to result form
+                        pollState();
+                        return;
+                    }
+
+                    const minutes = Math.floor(remaining / 60000);
+                    const seconds = Math.floor((remaining % 60000) / 1000);
+                    document.getElementById('timer-display').textContent =
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 100); // Update timer display frequently
+            }
+
+            async function setReady() {
+                await fetch(`/api/match/${MATCH_ID}/ready`, { method: 'POST' });
+                pollState();
+            }
+
+            async function setDone() {
+                await fetch(`/api/match/${MATCH_ID}/done`, { method: 'POST' });
+                pollState();
+            }
+
+            async function submitScore(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'error') {
+                        alert(data.message);
+                        form.reset();
+                        pollState(); // Refresh state to clear submissions if reset
+                    } else {
+                        pollState(); // Will switch to waiting or result
+                    }
+                } catch (error) {
+                    console.error('Error submitting score:', error);
+                }
+            }
+
+            async function pollState() {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    if (data.status === 'in_match' && data.match_id === MATCH_ID) {
+                        updateUI(data);
+                    } else if (data.status === 'idle') {
+                        // Match no longer active in global status - fetch specific match details
+                        await fetchMatchStatus();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            async function fetchMatchStatus() {
+                // Stop polling first to prevent loops
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                }
+
+                try {
+                    const response = await fetch(`/api/match/${MATCH_ID}`);
+                    const matchData = await response.json();
+
+                    if (matchData.error) {
+                        // Match doesn't exist - redirect to home
+                        window.location.href = '/';
+                    } else if (matchData.status === 'completed') {
+                        // Match is done! Show result screen
+                        updateUI({ winner_id: matchData.winner_id });
+                    } else {
+                        // Match exists but in unexpected state - go home
+                        window.location.href = '/';
+                    }
+                } catch (e) {
+                    console.error('Error fetching match status:', e);
+                    // On error, redirect to home
+                    window.location.href = '/';
+                }
+            }
+
+            // Poll frequently for sync (500ms)
+            pollInterval = setInterval(pollState, 500);
+            pollState(); // Initial load
+        </script>
+    </div>
+</div>
+{% endblock %}

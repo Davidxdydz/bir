@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Beerpong{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            /* Slate 900 */
+            color: #f8fafc;
+            /* Slate 50 */
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <nav class="p-4 glass sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{{ url_for('index') }}" class="text-2xl font-bold gradient-text">BEERPONG</a>
+            <div class="flex gap-4 items-center">
+                <a href="{{ url_for('index') }}"
+                    class="px-4 py-2 rounded-lg hover:bg-slate-700 transition {{ 'bg-slate-700' if request.endpoint == 'index' else '' }}">Home</a>
+                <a href="{{ url_for('schedule') }}"
+                    class="hidden sm:block text-sm text-slate-400 hover:text-white transition">Schedule</a>
+                <a href="{{ url_for('rules') }}"
+                    class="hidden sm:block text-sm text-slate-400 hover:text-white transition">Rules</a>
+                {% if g.user %}
+                {% if g.user['status'] == 'match_active' %}
+                <a href="{{ url_for('match', match_id=g.active_match['id']) if g.active_match else '#' }}"
+                    class="hidden sm:block px-3 py-1 rounded-full bg-pink-600/20 text-pink-400 border border-pink-600/50 text-xs font-bold animate-pulse">
+                    Match Active
+                </a>
+                {% elif g.user['status'] == 'match_pending' %}
+                <a href="{{ url_for('match', match_id=g.active_match['id']) if g.active_match else '#' }}"
+                    class="hidden sm:block px-3 py-1 rounded-full bg-yellow-600/20 text-yellow-400 border border-yellow-600/50 text-xs font-bold hover:bg-yellow-600/30 transition">
+                    Match Pending
+                </a>
+                {% elif g.user['status'] == 'available' %}
+                <span
+                    class="hidden sm:block px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 border border-blue-600/50 text-xs font-bold animate-pulse">
+                    Searching...
+                </span>
+                {% else %}
+                <span
+                    class="hidden sm:block px-3 py-1 rounded-full bg-slate-600/20 text-slate-400 border border-slate-600/50 text-xs font-bold">
+                    No Match
+                </span>
+                {% endif %}
+                {% endif %}
+                {% if g.user %}
+                <a href="{{ url_for('team_profile', team_id=g.user['id']) }}"
+                    class="self-center hidden sm:block text-sm text-slate-400 border-l border-slate-700 pl-4 hover:text-white transition">{{
+                    g.user['name'] }}</a>
+                <a href="{{ url_for('logout') }}"
+                    class="hidden sm:block px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-sm">Logout</a>
+                {% else %}
+                <a href="{{ url_for('auth') }}"
+                    class="hidden sm:block px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-violet-500 hover:opacity-90 transition text-sm font-bold">Login
+                    / Join</a>
+                {% endif %}
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="sm:hidden text-slate-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="sm:hidden hidden p-4 glass">
+            <a href="{{ url_for('index') }}" class="block text-slate-400 hover:text-white transition">Home</a>
+            <a href="{{ url_for('schedule') }}" class="block text-slate-400 hover:text-white transition">Schedule</a>
+            <a href="{{ url_for('rules') }}" class="block text-slate-400 hover:text-white transition">Rules</a>
+            {% if g.user %}
+            {% if g.active_match %}
+            <a href="{{ url_for('match', match_id=g.active_match['id']) }}"
+                class="block text-pink-400 font-bold animate-pulse">Match Active</a>
+            {% endif %}
+            <a href="{{ url_for('team_profile', team_id=g.user['id']) }}"
+                class="block text-slate-400 hover:text-white transition">Profile ({{ g.user['name'] }})</a>
+            <a href="{{ url_for('logout') }}" class="block text-slate-400 hover:text-white transition">Logout</a>
+            {% else %}
+            <a href="{{ url_for('auth') }}" class="block text-slate-400 hover:text-white transition">Login / Join</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <script>
+        document.getElementById('mobile-menu-btn').addEventListener('click', function () {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+    </script>
+
+    <main class="flex-grow container mx-auto p-4">
+        {% for message in get_flashed_messages() %}
+        <div class="p-4 mb-4 rounded-lg bg-slate-800 border border-slate-700 text-center animate-pulse">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="p-4 text-center text-slate-600 text-sm">
+        &copy; 2025 Beerpong League
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8">
+    <div class="glass p-8 rounded-xl space-y-6">
+        <h1 class="text-4xl font-bold gradient-text mb-8 text-center">Official Rules</h1>
+
+        <div class="space-y-8">
+            <section>
+                <h3 class="text-xl font-bold text-pink-500 mb-2">1. The Setup</h3>
+                <p class="text-slate-300 leading-relaxed">
+                    10 cups per side in a pyramid formation. Fill cups 1/3 full with water.
+                    Two players per team.
+                    The water stays in the cups, you can drink whatever you want (or nothing at all).
+                </p>
+            </section>
+
+            <section>
+                <h3 class="text-xl font-bold text-violet-500 mb-2">2. The Game</h3>
+                <p class="text-slate-300 leading-relaxed">
+                    Teams take turns throwing ping pong balls into the opponent's cups.
+                    If a ball lands in a cup, that cup is put to the side.
+                    The first team to eliminate all opponent cups wins.
+                </p>
+            </section>
+
+            <section>
+                <h3 class="text-xl font-bold text-pink-500 mb-2">3. Special Rules</h3>
+                <ul class="list-disc list-inside text-slate-300 space-y-2">
+                    <li><span class="font-bold text-white">Bounce Shots:</span> Count as 2 cups but can be swatted away.
+                    </li>
+                    <li><span class="font-bold text-white">Re-Racks:</span> Allowed twice per game at 6, 3, or 1 cup
+                        remaining.</li>
+                    <li><span class="font-bold text-white">Island:</span> Once per game, call a specific cup. If hit,
+                        count as 2. If missed into another cup, it doesn't count.</li>
+                </ul>
+            </section>
+
+            <div class="pt-8 text-center">
+                <a href="{{ url_for('index') }}"
+                    class="inline-block px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition">Back to
+                    Leaderboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
