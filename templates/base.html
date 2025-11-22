@@ -37,28 +37,24 @@
         <div class="container mx-auto flex justify-between items-center">
             <a href="{{ url_for('views.index') }}" class="text-2xl font-bold gradient-text">BEERPONG</a>
             <div class="hidden md:flex items-center space-x-6">
-                {% if g.active_match %}
-                <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
-                    class="nav-link text-amber-400 animate-pulse">
-                    Match Live!
-                </a>
-                {% endif %}
                 <a href="{{ url_for('views.index') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('views.schedule') }}" class="nav-link">Schedule</a>
                 <a href="{{ url_for('views.rules') }}" class="nav-link">Rules</a>
+                <a href="{{ url_for('views.game') }}" class="nav-link text-amber-400 font-bold">Game</a>
 
                 {% if g.user %}
                 <div class="flex items-center space-x-4 ml-4">
-                    <a href="{{ url_for('views.match', match_id=g.active_match['id']) if g.active_match else '#' }}"
+                    <a href="{{ url_for('views.team_profile', team_id=g.user['id']) }}"
                         class="px-4 py-2 rounded-full bg-slate-800 border border-slate-700 text-sm font-medium hover:bg-slate-700 transition flex items-center space-x-2">
                         <div class="w-2 h-2 rounded-full {{ 'bg-green-500' if g.active_match else 'bg-slate-500' }}">
                         </div>
                         <span>{{ g.user['name'] }}</span>
                     </a>
-                    <a href="{{ url_for('views.play') }}" class="btn-primary text-sm px-4 py-2">Play</a>
                 </div>
                 {% else %}
-                <a href="{{ url_for('views.play') }}" class="btn-primary text-sm px-4 py-2">Play</a>
+                <div class="ml-4">
+                    <a href="{{ url_for('auth.auth') }}" class="btn-primary text-sm px-4 py-2">Login / Join</a>
+                </div>
                 {% endif %}
             </div>
 
@@ -82,8 +78,8 @@
                 <div class="mt-2 pt-2 border-t border-slate-700 flex justify-between items-center">
                     <a href="{{ url_for('auth.logout') }}" class="text-sm text-red-400 hover:text-red-300">Logout</a>
                     {% if g.active_match %}
-                    <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
-                        class="text-sm text-amber-400 font-bold animate-pulse">Rejoin Match</a>
+                    <a href="{{ url_for('views.game') }}" class="text-sm text-amber-400 font-bold animate-pulse">Rejoin
+                        Match</a>
                     {% endif %}
                 </div>
             </div>
@@ -95,18 +91,11 @@
             <a href="{{ url_for('views.schedule') }}"
                 class="block text-slate-400 hover:text-white transition">Schedule</a>
             <a href="{{ url_for('views.rules') }}" class="block text-slate-400 hover:text-white transition">Rules</a>
-
-            {% if g.active_match %}
-            <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
-                class="block text-amber-400 font-bold animate-pulse">
-                Return to Match
-            </a>
-            {% endif %}
+            <a href="{{ url_for('views.game') }}" class="block text-amber-400 font-bold">Game</a>
 
             {% if g.user %}
             <a href="{{ url_for('views.team_profile', team_id=g.user['id']) }}"
                 class="block text-slate-400 hover:text-white transition">My Profile</a>
-            <a href="{{ url_for('views.play') }}" class="block btn-primary text-center py-3 mt-4">Play Now</a>
             <a href="{{ url_for('auth.logout') }}" class="block text-slate-400 hover:text-white transition">Logout</a>
             {% else %}
             <a href="{{ url_for('auth.auth') }}" class="block text-slate-400 hover:text-white transition">Login /

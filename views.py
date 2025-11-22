@@ -127,101 +127,51 @@ def team_profile(team_id):
         
     return render_template('team.html', team=team, is_own_profile=is_own_profile, elo_history=elo_data)
 
-@bp.route('/play')
-@login_required
-def play():
+@bp.route('/game')
+def game():
     mm = get_match_manager()
-    team_state = mm.get_user_state(g.user['id'])
-    state_value = team_state.get('state', 'no_match')
+    conn = db.get_db()
     
-    match_data = None
-    if state_value in ('match_pending', 'match_active') and team_state.get('match'):
-        match = team_state['match']
-        if match:
+    # 1. Get User's Match (if logged in)
+    user_match = None
+    if g.user:
+        team_state = mm.get_user_state(g.user['id'])
+        if team_state.get('match'):
+            match = team_state['match']
             is_team1 = g.user['id'] == match['team1_id']
             opponent_name = match['team2_name'] if is_team1 else match['team1_name']
             
-            match_data = {
+            user_match = {
                 'id': match['id'],
                 'status': match['status'],
+                'team1_name': match['team1_name'],
+                'team2_name': match['team2_name'],
                 'opponent_name': opponent_name,
-                'scheduled_start': match['scheduled_start']
+                'scheduled_start': match['scheduled_start'],
+                'timer_start': match['timer_start']
             }
-    
-    return render_template('play.html', team_state=state_value, match_data=match_data)
-
-@bp.route('/match/<int:match_id>', methods=('GET', 'POST'))
-@login_required
-def match(match_id):
-    conn = db.get_db()
-    match = conn.execute(
-        '''SELECT m.*, t1.name as team1_name, t2.name as team2_name, tab.name as table_name
-           FROM matches m
-           JOIN teams t1 ON m.team1_id = t1.id
-           JOIN teams t2 ON m.team2_id = t2.id
-           LEFT JOIN tables tab ON m.table_id = tab.id
-           WHERE m.id = ?''',
-        (match_id,)
-    ).fetchone()
-
-    if match is None:
-        if request.method == 'POST':
-             return jsonify({'status': 'error', 'message': 'Match not found'}), 404
-        return redirect(url_for('views.index'))
-
-    # Authorization check
-    if g.user['id'] != match['team1_id'] and g.user['id'] != match['team2_id']:
-         if request.method == 'POST':
-             return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-         return redirect(url_for('views.index'))
-
-    if request.method == 'POST':
-        if 'score1' not in request.form or 'score2' not in request.form:
-             return jsonify({'status': 'error', 'message': 'Missing scores'})
-
-        # Result submission
-        try:
-            score1 = int(request.form['score1'])
-            score2 = int(request.form['score2'])
-        except ValueError:
-            return jsonify({'status': 'error', 'message': 'Invalid scores'})
-
-        if not (0 <= score1 <= 10) or not (0 <= score2 <= 10):
-            return jsonify({'status': 'error', 'message': 'Scores must be between 0 and 10'}), 400
-        
-        is_team1 = g.user['id'] == match['team1_id']
-        if match['status'] == 'completed':
-            return jsonify({'status': 'error', 'message': 'Match already completed.'}), 400
-
-        # Normalize submitted scores relative to the submitting team
-        if is_team1:
-            my_score, opp_score = score1, score2
         else:
-            my_score, opp_score = score2, score1
+            # Not in a match, but might be 'available' (searching) or 'no_match'
+            user_match = {
+                'status': team_state.get('state', 'no_match')
+            }
 
-        mm = get_match_manager()
-        result = mm.submit_score(match_id, g.user['id'], my_score, opp_score)
-        
-        if result['status'] == 'error':
-            return jsonify(result), 400
-            
-        # If success, we need to return the current state for the UI
-        # The UI expects awaiting_submission_team_ids etc.
-        
-        submission_state = mm.get_submission_snapshot(match_id)
-        
-        return jsonify({
-            'status': 'success',
-            'result': result.get('result', 'waiting_for_opponent'),
-            'awaiting_submission_team_ids': submission_state['awaiting_team_ids'],
-            'awaiting_submission_names': submission_state['awaiting_team_names']
-        })
+    # 2. Get Global Active Matches
+    active_matches_raw = conn.execute('''
+        SELECT m.*, 
+               t1.name as team1_name, 
+               t2.name as team2_name,
+               tab.name as table_name
+        FROM matches m
+        JOIN teams t1 ON m.team1_id = t1.id
+        JOIN teams t2 ON m.team2_id = t2.id
+        LEFT JOIN tables tab ON m.table_id = tab.id
+        WHERE m.status IN ('active', 'ready_check')
+        ORDER BY m.scheduled_start ASC
+    ''').fetchall()
+    
+    active_matches = [dict(m) for m in active_matches_raw]
+    
+    return render_template('game.html', user_match=user_match, active_matches=active_matches)
 
-    # Retrieve team details for rendering
-    team1 = conn.execute('SELECT * FROM teams WHERE id = ?', (match['team1_id'],)).fetchone()
-    team2 = conn.execute('SELECT * FROM teams WHERE id = ?', (match['team2_id'],)).fetchone()
-    return render_template('match.html',
-                         match=match,
-                         team1=team1,
-                         team2=team2,
-                         match_duration_minutes=MATCH_DURATION_MINUTES)
+

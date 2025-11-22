@@ -34,7 +34,7 @@
         <!-- Matchmaking Area -->
         <div id="matchmaking-area"
             class="{% if team_state in ('match_pending', 'match_active') %}hidden{% endif %} space-y-4">
-            <a href="{{ url_for('views.play') }}"
+            <a href="{{ url_for('views.game') }}"
                 class="inline-block px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition transform hover:scale-105 bg-gradient-to-r from-pink-600 to-violet-600 shadow-pink-500/20">
                 Go to Match Center
             </a>
@@ -79,7 +79,7 @@
                         <td class="p-4 font-mono text-slate-500">#{{ loop.index }}</td>
                         <td class="p-4 font-bold">
                             <a href="{{ url_for('views.team_profile', team_id=team['id']) }}"
-                                class="hover:text-pink-400 transition">
+                                class="hover:text-pink-400 transition font-bold">
                                 {{ team['name'] }}
                             </a>
                         </td>

@@ -37,9 +37,11 @@
                                 {{ 'border-pink-500/50 bg-pink-500/5' if match['status'] == 'active' else '' }}">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="font-semibold">{{ match['team1_name'] }}</span>
+                            <a href="{{ url_for('views.team_profile', team_id=match['team1_id']) }}"
+                                class="font-semibold hover:text-pink-400 transition">{{ match['team1_name'] }}</a>
                             <span class="text-slate-500 text-xs">vs</span>
-                            <span class="font-semibold">{{ match['team2_name'] }}</span>
+                            <a href="{{ url_for('views.team_profile', team_id=match['team2_id']) }}"
+                                class="font-semibold hover:text-pink-400 transition">{{ match['team2_name'] }}</a>
                         </div>
                         {% if match['scheduled_start'] %}
                         <div class="text-xs text-slate-500">

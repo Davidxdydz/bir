@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+    {% if user_match %}
+    <!-- User is in a match (Playing or Scheduled) -->
+    <div class="glass p-8 rounded-xl text-center space-y-6 border border-pink-500/30 shadow-lg shadow-pink-500/10">
+        <h2 class="text-3xl font-bold gradient-text">Your Match</h2>
+
+        <div class="flex justify-center items-center gap-8 text-2xl font-bold">
+            <div class="text-pink-400">{{ user_match['team1_name'] }}</div>
+            <div class="text-slate-500 text-sm">VS</div>
+            <div class="text-violet-400">{{ user_match['team2_name'] }}</div>
+        </div>
+
+        <div class="text-slate-400">
+            Status: <span class="text-white font-bold uppercase">{{ user_match['status'] }}</span>
+        </div>
+
+        <!-- Match Controls -->
+        <div id="match-controls">
+            {% if user_match['status'] == 'active' %}
+            <div class="text-6xl font-mono font-bold text-white mb-8" id="timer">00:00</div>
+            <button onclick="markDone({{ user_match['id'] }})"
+                class="px-8 py-4 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 font-bold text-xl shadow-lg hover:scale-105 transition">
+                Finish Match
+            </button>
+            {% elif user_match['status'] == 'finished' %}
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold">Submit Score</h3>
+                <form onsubmit="submitScore(event, {{ user_match['id'] }})" class="max-w-xs mx-auto space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Your Score</label>
+                            <input type="number" name="score1" min="0" max="10" required
+                                class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-center text-xl font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Opponent</label>
+                            <input type="number" name="score2" min="0" max="10" required
+                                class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-center text-xl font-bold">
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 font-bold transition">
+                        Submit Result
+                    </button>
+                </form>
+            </div>
+            {% elif user_match['status'] == 'ready_check' %}
+            <div class="text-yellow-400 font-bold text-xl animate-pulse mb-4">Are you ready?</div>
+            <button onclick="markReady({{ user_match['id'] }})"
+                class="px-8 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-500 font-bold text-lg transition">
+                I'm Ready
+            </button>
+            {% elif user_match['status'] == 'scheduled' %}
+            <div class="text-slate-400 italic">Waiting for match to start...</div>
+            {% if user_match['scheduled_start'] %}
+            <div class="text-sm text-slate-500 mt-2">Scheduled for: {{ user_match['scheduled_start'] }}</div>
+            {% endif %}
+            {% elif user_match['status'] == 'available' %}
+            <div class="space-y-4">
+                <div class="text-xl font-bold text-slate-300">Looking for Opponent...</div>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                <button onclick="toggleMatchmaking()"
+                    class="px-8 py-3 rounded-xl bg-red-600 hover:bg-red-500 font-bold text-lg transition">
+                    Cancel Search
+                </button>
+            </div>
+            {% elif user_match['status'] == 'no_match' %}
+            <div class="space-y-4">
+                <h2 class="text-3xl font-bold gradient-text">Ready to Play?</h2>
+                <button onclick="toggleMatchmaking()"
+                    class="px-8 py-4 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 font-bold text-xl shadow-lg hover:scale-105 transition shadow-pink-500/20">
+                    Find Match
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Global Active Matches -->
+    <div class="space-y-6">
+        <h2 class="text-2xl font-bold text-slate-300">Active Games</h2>
+
+        {% if active_matches %}
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for match in active_matches %}
+            <div class="glass p-6 rounded-xl border border-slate-700/50 hover:border-slate-600 transition">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-bold text-slate-500 uppercase">{{ match['table_name'] or 'Table 1'
+                        }}</span>
+                    <span class="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold">LIVE</span>
+                </div>
+
+                <div class="flex justify-between items-center text-lg font-bold">
+                    <a href="{{ url_for('views.team_profile', team_id=match['team1_id']) }}"
+                        class="hover:text-pink-400 transition">{{ match['team1_name'] }}</a>
+                    <span class="text-slate-600 text-sm">vs</span>
+                    <a href="{{ url_for('views.team_profile', team_id=match['team2_id']) }}"
+                        class="hover:text-pink-400 transition">{{ match['team2_name'] }}</a>
+                </div>
+
+                {% if match['timer_start'] %}
+                <div class="mt-4 text-center text-slate-400 font-mono text-sm">
+                    Started: {{ match['timer_start'] }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-slate-500 italic bg-slate-800/20 rounded-xl">
+            No active games at the moment.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Timer logic (simplified for brevity, can import from main.js or duplicate)
+    // ... (Add timer logic here if needed, or rely on main.js if it handles generic timers)
+
+    async function toggleMatchmaking() {
+        const res = await fetch('/api/toggle_status', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'match_found') {
+            window.location.reload();
+        } else if (data.status === 'searching' || data.status === 'cancelled') {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error toggling matchmaking');
+        }
+    }
+
+    async function markReady(matchId) {
+        const res = await fetch(`/api/match/${matchId}/ready`, { method: 'POST' });
+        if (res.ok) window.location.reload();
+    }
+
+    async function markDone(matchId) {
+        const res = await fetch(`/api/match/${matchId}/done`, { method: 'POST' });
+        if (res.ok) window.location.reload();
+    }
+
+    async function submitScore(e, matchId) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const res = await fetch(`/match/${matchId}`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.message);
+        }
+    }
+</script>
+{% endblock %}
