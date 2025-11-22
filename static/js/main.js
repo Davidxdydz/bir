@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!matchCard || !matchmakingArea) return;
 
                 if (data.status === 'in_match') {
-                    // Always redirect to match page if we are on index
-                    if (window.location.pathname === '/' || window.location.pathname === '/index') {
+                    // Always redirect to match page if we are on index or play page
+                    if (window.location.pathname === '/' || window.location.pathname === '/index' || window.location.pathname === '/play') {
                         window.location.href = `/match/${data.match_id}`;
                         return;
                     }

@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS match_submissions;
 DROP TABLE IF EXISTS teams;
 DROP TABLE IF EXISTS matches;
 DROP TABLE IF EXISTS tables;
@@ -45,6 +46,17 @@ CREATE TABLE matches (
     FOREIGN KEY (team2_id) REFERENCES teams (id),
     FOREIGN KEY (table_id) REFERENCES tables (id),
     FOREIGN KEY (winner_id) REFERENCES teams (id)
+);
+CREATE TABLE match_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    team_id INTEGER NOT NULL,
+    score_for INTEGER NOT NULL,
+    score_against INTEGER NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(match_id, team_id),
+    FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE CASCADE
 );
 CREATE TABLE elo_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

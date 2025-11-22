@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-8">
+    <div class="glass p-8 rounded-xl text-center space-y-8">
+        <h2 class="text-3xl font-bold">Play</h2>
+
+        <!-- Pending/Active Match Card -->
+        <div id="match-card"
+            class="{% if team_state == 'no_match' or team_state == 'available' %}hidden{% endif %} glass-card p-6 rounded-2xl border-2 border-pink-500/30">
+            <div class="text-center space-y-4">
+                <div id="match-status-header" class="text-sm text-pink-400 uppercase font-bold">
+                    Match {{ 'Active' if team_state == 'match_active' else 'Scheduled' }}
+                </div>
+                <div id="match-opponent" class="text-2xl font-bold">vs <span id="opponent-name">{{
+                        match_data.opponent_name if match_data else '' }}</span></div>
+
+                <div class="text-slate-400">Your match is ready!</div>
+
+                <!-- Action Buttons -->
+                <div id="match-actions" class="pt-4">
+                    <a id="go-to-match-btn"
+                        href="{{ url_for('views.match', match_id=match_data.id) if match_data else '#' }}"
+                        class="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 font-bold text-lg shadow-lg shadow-pink-500/20 hover:scale-105 transition transform">
+                        Go to Match
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matchmaking Area -->
+        <div id="matchmaking-area"
+            class="{% if team_state in ('match_pending', 'match_active') %}hidden{% endif %} space-y-6">
+
+            <div class="text-slate-300">
+                {% if team_state == 'available' %}
+                Searching for an opponent...
+                {% else %}
+                Ready to play? Join the queue!
+                {% endif %}
+            </div>
+
+            <button id="toggle-status-btn" class="w-full py-4 rounded-xl font-bold text-xl shadow-lg transition transform hover:scale-105
+                {% if team_state == 'available' %}
+                    bg-slate-600 text-white hover:bg-slate-500
+                {% else %}
+                    bg-gradient-to-r from-pink-600 to-violet-600 shadow-pink-500/20
+                {% endif %}">
+                {{ 'Cancel Search' if team_state == 'available' else 'Find Match' }}
+            </button>
+
+            <div id="status-message" class="text-sm space-y-1">
+                <div id="status-indicator" class="font-bold text-slate-400">
+                    {{ 'Searching for opponent...' if team_state == 'available' else 'Click to join the matchmaking
+                    queue' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // No local countdown needed anymore - simplified UI
+</script>
+{% endblock %}

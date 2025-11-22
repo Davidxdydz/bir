@@ -35,75 +35,82 @@
 <body class="min-h-screen flex flex-col">
     <nav class="p-4 glass sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="{{ url_for('index') }}" class="text-2xl font-bold gradient-text">BEERPONG</a>
-            <div class="flex gap-4 items-center">
-                <a href="{{ url_for('index') }}"
-                    class="px-4 py-2 rounded-lg hover:bg-slate-700 transition {{ 'bg-slate-700' if request.endpoint == 'index' else '' }}">Home</a>
-                <a href="{{ url_for('schedule') }}"
-                    class="hidden sm:block text-sm text-slate-400 hover:text-white transition">Schedule</a>
-                <a href="{{ url_for('rules') }}"
-                    class="hidden sm:block text-sm text-slate-400 hover:text-white transition">Rules</a>
-                {% if g.user %}
-                {% if g.user['status'] == 'match_active' %}
-                <a href="{{ url_for('match', match_id=g.active_match['id']) if g.active_match else '#' }}"
-                    class="hidden sm:block px-3 py-1 rounded-full bg-pink-600/20 text-pink-400 border border-pink-600/50 text-xs font-bold animate-pulse">
-                    Match Active
+            <a href="{{ url_for('views.index') }}" class="text-2xl font-bold gradient-text">BEERPONG</a>
+            <div class="hidden md:flex items-center space-x-6">
+                {% if g.active_match %}
+                <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
+                    class="nav-link text-amber-400 animate-pulse">
+                    Match Live!
                 </a>
-                {% elif g.user['status'] == 'match_pending' %}
-                <a href="{{ url_for('match', match_id=g.active_match['id']) if g.active_match else '#' }}"
-                    class="hidden sm:block px-3 py-1 rounded-full bg-yellow-600/20 text-yellow-400 border border-yellow-600/50 text-xs font-bold hover:bg-yellow-600/30 transition">
-                    Match Pending
-                </a>
-                {% elif g.user['status'] == 'available' %}
-                <span
-                    class="hidden sm:block px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 border border-blue-600/50 text-xs font-bold animate-pulse">
-                    Searching...
-                </span>
-                {% else %}
-                <span
-                    class="hidden sm:block px-3 py-1 rounded-full bg-slate-600/20 text-slate-400 border border-slate-600/50 text-xs font-bold">
-                    No Match
-                </span>
                 {% endif %}
-                {% endif %}
-                {% if g.user %}
-                <a href="{{ url_for('team_profile', team_id=g.user['id']) }}"
-                    class="self-center hidden sm:block text-sm text-slate-400 border-l border-slate-700 pl-4 hover:text-white transition">{{
-                    g.user['name'] }}</a>
-                <a href="{{ url_for('logout') }}"
-                    class="hidden sm:block px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-sm">Logout</a>
-                {% else %}
-                <a href="{{ url_for('auth') }}"
-                    class="hidden sm:block px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-violet-500 hover:opacity-90 transition text-sm font-bold">Login
-                    / Join</a>
-                {% endif %}
+                <a href="{{ url_for('views.index') }}" class="nav-link">Leaderboard</a>
+                <a href="{{ url_for('views.schedule') }}" class="nav-link">Schedule</a>
+                <a href="{{ url_for('views.rules') }}" class="nav-link">Rules</a>
 
-                <!-- Mobile Menu Button -->
-                <button id="mobile-menu-btn" class="sm:hidden text-slate-400 hover:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
+                {% if g.user %}
+                <div class="flex items-center space-x-4 ml-4">
+                    <a href="{{ url_for('views.match', match_id=g.active_match['id']) if g.active_match else '#' }}"
+                        class="px-4 py-2 rounded-full bg-slate-800 border border-slate-700 text-sm font-medium hover:bg-slate-700 transition flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full {{ 'bg-green-500' if g.active_match else 'bg-slate-500' }}">
+                        </div>
+                        <span>{{ g.user['name'] }}</span>
+                    </a>
+                    <a href="{{ url_for('views.play') }}" class="btn-primary text-sm px-4 py-2">Play</a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('views.play') }}" class="btn-primary text-sm px-4 py-2">Play</a>
+                {% endif %}
             </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                    </path>
+                </svg>
+            </button>
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="sm:hidden hidden p-4 glass">
-            <a href="{{ url_for('index') }}" class="block text-slate-400 hover:text-white transition">Home</a>
-            <a href="{{ url_for('schedule') }}" class="block text-slate-400 hover:text-white transition">Schedule</a>
-            <a href="{{ url_for('rules') }}" class="block text-slate-400 hover:text-white transition">Rules</a>
+        <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-slate-800 mt-4 pt-4 space-y-4">
             {% if g.user %}
-            {% if g.active_match %}
-            <a href="{{ url_for('match', match_id=g.active_match['id']) }}"
-                class="block text-pink-400 font-bold animate-pulse">Match Active</a>
+            <div class="px-2 py-2 bg-slate-800 rounded-lg mb-4">
+                <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Logged in as</div>
+                <div class="font-bold text-lg">{{ g.user['name'] }}</div>
+                <a href="{{ url_for('views.team_profile', team_id=g.user['id']) }}"
+                    class="text-xs text-blue-400 hover:text-blue-300">View Profile</a>
+                <div class="mt-2 pt-2 border-t border-slate-700 flex justify-between items-center">
+                    <a href="{{ url_for('auth.logout') }}" class="text-sm text-red-400 hover:text-red-300">Logout</a>
+                    {% if g.active_match %}
+                    <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
+                        class="text-sm text-amber-400 font-bold animate-pulse">Rejoin Match</a>
+                    {% endif %}
+                </div>
+            </div>
             {% endif %}
-            <a href="{{ url_for('team_profile', team_id=g.user['id']) }}"
-                class="block text-slate-400 hover:text-white transition">Profile ({{ g.user['name'] }})</a>
-            <a href="{{ url_for('logout') }}" class="block text-slate-400 hover:text-white transition">Logout</a>
+
+            <a href="{{ url_for('views.index') }}" class="block text-slate-400 hover:text-white transition">Home</a>
+            <a href="{{ url_for('views.index') }}"
+                class="block text-slate-400 hover:text-white transition">Leaderboard</a>
+            <a href="{{ url_for('views.schedule') }}"
+                class="block text-slate-400 hover:text-white transition">Schedule</a>
+            <a href="{{ url_for('views.rules') }}" class="block text-slate-400 hover:text-white transition">Rules</a>
+
+            {% if g.active_match %}
+            <a href="{{ url_for('views.match', match_id=g.active_match['id']) }}"
+                class="block text-amber-400 font-bold animate-pulse">
+                Return to Match
+            </a>
+            {% endif %}
+
+            {% if g.user %}
+            <a href="{{ url_for('views.team_profile', team_id=g.user['id']) }}"
+                class="block text-slate-400 hover:text-white transition">My Profile</a>
+            <a href="{{ url_for('views.play') }}" class="block btn-primary text-center py-3 mt-4">Play Now</a>
+            <a href="{{ url_for('auth.logout') }}" class="block text-slate-400 hover:text-white transition">Logout</a>
             {% else %}
-            <a href="{{ url_for('auth') }}" class="block text-slate-400 hover:text-white transition">Login / Join</a>
+            <a href="{{ url_for('auth.auth') }}" class="block text-slate-400 hover:text-white transition">Login /
+                Join</a>
             {% endif %}
         </div>
     </nav>

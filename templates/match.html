@@ -118,6 +118,7 @@
                 <div class="animate-pulse text-6xl mb-4">⏳</div>
                 <h3 class="text-2xl font-bold">Waiting for Opponent...</h3>
                 <p class="text-slate-400">We need both teams to submit the same score to verify the result.</p>
+                <p id="waiting-on" class="text-sm text-slate-500"></p>
             </div>
 
             <!-- Phase 5: Score Mismatch -->
@@ -138,7 +139,7 @@
                 <h2 id="result-title" class="text-4xl font-bold gradient-text">YOU WIN!</h2>
                 <p id="result-message" class="text-slate-400">Congratulations on the victory.</p>
 
-                <a href="{{ url_for('index') }}"
+                <a href="{{ url_for('views.index') }}"
                     class="inline-block px-8 py-4 rounded-xl bg-slate-700 font-bold text-lg shadow-lg hover:bg-slate-600 transition transform">
                     Back to Home
                 </a>
@@ -159,6 +160,10 @@
 
             function updateUI(state) {
                 document.getElementById('loading-state').classList.add('hidden');
+                const waitingOnEl = document.getElementById('waiting-on');
+                if (waitingOnEl) {
+                    waitingOnEl.textContent = '';
+                }
 
                 // Check for completed match (Result Phase)
                 if (state.winner_id) {
@@ -197,6 +202,12 @@
 
                 if (amISubmitted) {
                     showPhase('waiting-phase');
+                    if (waitingOnEl) {
+                        const names = state.awaiting_submission_names || [];
+                        waitingOnEl.textContent = names.length
+                            ? `Waiting on ${names.join(' & ')}`
+                            : 'Waiting for confirmation...';
+                    }
                     return;
                 }
 
@@ -353,23 +364,64 @@
                 e.preventDefault();
                 const form = e.target;
                 const formData = new FormData(form);
+                const submitBtn = form.querySelector('button[type="submit"]');
+
+                // Disable button to prevent double submission
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Submitting...';
+                }
 
                 try {
                     const response = await fetch(window.location.href, {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
                     });
+
+                    // Handle non-JSON responses (e.g. redirects)
+                    const contentType = response.headers.get("content-type");
+                    if (!contentType || !contentType.includes("application/json")) {
+                        // If we got HTML back, it might be a redirect to login or index
+                        // Reload page to follow redirect
+                        window.location.reload();
+                        return;
+                    }
+
                     const data = await response.json();
 
                     if (data.status === 'error') {
                         alert(data.message);
                         form.reset();
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Submit Score';
+                        }
                         pollState(); // Refresh state to clear submissions if reset
                     } else {
+                        if (submitBtn) {
+                            if (data.result === 'waiting_for_opponent') {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Update Submission';
+                            } else if (data.result === 'match_completed') {
+                                submitBtn.disabled = true;
+                                submitBtn.textContent = 'Scores Verified';
+                            } else {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Submit Score';
+                            }
+                        }
                         pollState(); // Will switch to waiting or result
                     }
                 } catch (error) {
                     console.error('Error submitting score:', error);
+                    alert('An error occurred while submitting. Please try again.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Submit Score';
+                    }
                 }
             }
 
@@ -381,6 +433,9 @@
                         updateUI(data);
                     } else if (data.status === 'idle') {
                         // Match no longer active in global status - fetch specific match details
+                        await fetchMatchStatus();
+                    } else if (data.status === 'no_match' || data.status === 'available') {
+                        // Team is out of the match; check if the tracked match just finished
                         await fetchMatchStatus();
                     }
                 } catch (e) {
@@ -403,7 +458,7 @@
                         // Match doesn't exist - redirect to home
                         window.location.href = '/';
                     } else if (matchData.status === 'completed') {
-                        // Match is done! Show result screen
+                        // Match is done! Show result screen using the cached data
                         updateUI({ winner_id: matchData.winner_id });
                     } else {
                         // Match exists but in unexpected state - go home
